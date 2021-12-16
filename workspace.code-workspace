@@ -1,0 +1,27 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"editor.insertSpaces": true,
+		"editor.tabSize": 2,
+		"editor.detectIndentation": false,
+		"prettier.tabWidth": 2,
+		"prettier.useTabs": false, // This made it finally work for me
+
+
+		"editor.rulers": [
+			80, // <- a ruler in the default color or as customized (with "editorRuler.foreground") at column 100
+			{
+				"column": 100,
+				"color": "#a14949"
+			},
+			{
+				"column": 120,
+				"color": "red"
+			},
+		]
+	}
+}
