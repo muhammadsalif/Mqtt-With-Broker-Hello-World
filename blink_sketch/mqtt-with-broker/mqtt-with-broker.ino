@@ -1,14 +1,15 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
+#include <ArduinoJson.h>
+
 WiFiClient wifiClient;
 PubSubClient pusSubClient(wifiClient);
 
-#define yourTopicName "testing-topic"
+#define topicName "testing"
 
 // Replace these with your SSID/Password
-const char* ssid = "your SSID";
-const char* password = "you Password";
-
+const char* ssid = "yourSSID";
+const char* password = "yourPassword";
 
 // Add your MQTT Broker IP address, example:
 //const char* mqtt_server = "192.168.1.144";
@@ -19,15 +20,12 @@ const int mqttPort = 1883; // non-ssl
 // https://github.com/knolleary/pubsubclient/issues/462#issuecomment-542911896
 // and this:
 // https://github.com/programmer131/ESP8266-gBridge-TLS/blob/master/esp8266_gbridgeTLS/esp8266_gbridgeTLS.ino
-const char* mqttUser = "your mqtt token";
+const char* mqttUser = "your_mqtt_token";
 const char* mqttPassword = "";
 
 long lastMsg = 0;
 char msg[50];
 int value = 0;
-
-// LED Pin
-const int ledPin = 4 ;
 
 void setup() {
   // put your setup code here, to run once:
@@ -46,9 +44,6 @@ void setup() {
   Serial.println("WiFi connected");
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
-
-  pinMode(ledPin, OUTPUT);
-  digitalWrite(ledPin, LOW);
 
   pusSubClient.setServer(mqttServer, mqttPort);
   pusSubClient.setCallback(callback);
@@ -73,14 +68,10 @@ void reconnect() {
   while (!pusSubClient.connected()) {
     Serial.print("Attempting MQTT connection...");
     // Attempt to connect
-    if (pusSubClient.connect(yourTopicName, mqttUser, mqttPassword)) {
+    if (pusSubClient.connect(topicName, mqttUser, mqttPassword)) {
       Serial.println("connected");
-
       // Subscribe
-      pusSubClient.subscribe(yourTopicName);
-      if (pusSubClient.connect(yourTopicName, mqttUser, mqttPassword)) {
-        Serial.println("connected");
-      }
+      pusSubClient.subscribe(topicName);
     }  else {
       Serial.print("failed, rc=");
       Serial.print(pusSubClient.state());
@@ -91,33 +82,33 @@ void reconnect() {
   }
 }
 
-void callback(char* topic, byte* message, unsigned int length) {
+void callback(char* topic, byte* payload, unsigned int length) {
+  
+  // Expected payload format
+  /*
+    {
+    "topicName": "testing",
+    "payload": {
+      "sensor": "Distance",
+      "time": 1351824120,
+      "data": [48.75608,2.302038]
+      }
+    }
+  */
+
   Serial.print("Message arrived on topic: ");
-  Serial.print(topic);
-  Serial.print(". Message: ");
-  String messageTemp;
+  Serial.println(topic);
 
-  for (int i = 0; i < length; i++) {
-    Serial.print((char)message[i]);
-    messageTemp += (char)message[i];
-  }
-  Serial.println();
+  //parsing JSON
+  DynamicJsonDocument doc(1024);
+  deserializeJson(doc, payload);
 
-  // Feel free to add more if statements to control more GPIOs with MQTT
+  const char* sensor = doc["sensor"];
+  long time          = doc["time"];
+  double latitude    = doc["data"][0];
+  double longitude   = doc["data"][1];
 
-  // If a message is received on the topic esp32/output, you check if the message is either "on" or "off".
-  // Changes the output state according to the message
-  if (String(topic) == yourTopicName) {
-    Serial.print("Topic arrived on yourTopicName");
-    Serial.print("Changing output to ");
-    if (messageTemp == "hello") {
-      Serial.println("hello");
-      digitalWrite(ledPin, HIGH);
-    }
-    else if (messageTemp == "world") {
-      Serial.println("world");
-      digitalWrite(ledPin, LOW);
-    }
-  }
+  Serial.print("Your sensor: ");
+  Serial.print(sensor);
 
 }

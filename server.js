@@ -40,7 +40,7 @@ var options = {
 // if connecting with secure port start with 'mqtts:// ...' instead, and for socket port start with "wss:// ..."
 
 const URi =
-  "mqtts://YOUR-FLESPI-ID@mqtt.flespi.io:8883";
+  "mqtts://your_mqtt_token_here@mqtt.flespi.io:8883";
 var mqttClient = mqtt.connect(URi, options);
 
 mqttClient.on("connect", function () {
@@ -64,11 +64,18 @@ mqttClient.on("message", function (topic, message) {
 
 // temp-route
 app.put("/temp-route", (req, res, next) => {
-  if (!req.body || !req.body.topicName || !req.body.message) {
+  if (!req.body || !req.body.topicName || !req.body.payload) {
     res.status(400).send(`Info is missing provide topicName and message
     Eg:{
       "topicName": 132151531,
-      "message":"on"
+      "payload": {
+        "sensor": "Distance",
+        "time": 1351824120,
+        "data": [
+          48.75608,
+          2.302038
+        ]
+      }
     }`);
     console.log("Information is missing");
     return;
@@ -77,11 +84,12 @@ app.put("/temp-route", (req, res, next) => {
   // Publishing a message to MQTT client
   mqttClient.publish(
     req.body.topicName.toLowerCase(),
-    Buffer.from(req.body.message.toLowerCase()), // on or off
+    Buffer.from(JSON.stringify(req.body.payload)),
     function () {
       console.log("a topic is published from client ");
     },
   );
+  res.send({ message: "success" })
 });
 
 // Server listening ////////////////////////////////////////////////////////////
